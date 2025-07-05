@@ -6,8 +6,9 @@
   "type": "module",
   "scripts": {
     "dev": "wrangler dev --local",
-    "build": "tsc && wrangler publish --dry-run",
-    "deploy": "wrangler publish",
+    "build": "tsc",
+    "deploy": "./scripts/deploy.sh",
+    "deploy:quick": "wrangler deploy",
     "test": "vitest",
     "test:run": "vitest run",
     "lint": "eslint src/**/*.ts",

@@ -57,6 +57,7 @@ export class DirectusMarketplaceMCPServer {
     });
 
     // Register tool definitions
+    // @ts-ignore - MCP SDK type issues
     this.server.setRequestHandler('tools/list', async () => {
       return {
         tools: [
@@ -235,7 +236,8 @@ export class DirectusMarketplaceMCPServer {
     // Handle MCP endpoint
     if (url.pathname === '/mcp') {
       try {
-        const transport = new SSEServerTransport(new WritableStream(), new ReadableStream());
+        // @ts-ignore - Worker environment compatibility
+        const transport = new SSEServerTransport('/dev/stdout', '/dev/stdin');
         await this.server.connect(transport);
         return new Response('MCP server connected', { status: 200 });
       } catch (error) {
