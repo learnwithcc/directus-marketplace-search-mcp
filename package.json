@@ -1,0 +1,45 @@
+{
+  "name": "directus-marketplace-search-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for Directus Marketplace search functionality deployed on Cloudflare Workers",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --local",
+    "build": "tsc && wrangler publish --dry-run",
+    "deploy": "wrangler publish",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.5.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241230.0",
+    "@types/node": "^22.10.1",
+    "@typescript-eslint/eslint-plugin": "^8.15.0",
+    "@typescript-eslint/parser": "^8.15.0",
+    "eslint": "^9.16.0",
+    "eslint-config-prettier": "^9.1.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.6",
+    "wrangler": "^3.91.0"
+  },
+  "keywords": [
+    "mcp",
+    "directus",
+    "marketplace",
+    "cloudflare-workers",
+    "search"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

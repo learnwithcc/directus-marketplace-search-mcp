@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Directus Extensions Search Demo</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .header {
+            background: linear-gradient(135deg, #6644ff 0%, #4338ca 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        .search-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+        .search-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 16px;
+            margin-bottom: 1rem;
+        }
+        .search-input:focus {
+            outline: none;
+            border-color: #6644ff;
+        }
+        .filters {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+        .filter-select {
+            padding: 8px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            background: white;
+        }
+        .search-button {
+            background: #6644ff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .search-button:hover {
+            background: #5a3de8;
+        }
+        .results-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .extension-card {
+            padding: 1.5rem;
+            border-bottom: 1px solid #e2e8f0;
+            transition: background-color 0.2s;
+        }
+        .extension-card:hover {
+            background-color: #f8f9fa;
+        }
+        .extension-card:last-child {
+            border-bottom: none;
+        }
+        .extension-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1a202c;
+            margin-bottom: 0.5rem;
+        }
+        .extension-type {
+            display: inline-block;
+            background: #e2e8f0;
+            color: #4a5568;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            margin-right: 0.5rem;
+        }
+        .extension-description {
+            color: #718096;
+            margin: 0.5rem 0;
+        }
+        .extension-meta {
+            font-size: 0.875rem;
+            color: #a0aec0;
+            display: flex;
+            gap: 1rem;
+        }
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #718096;
+        }
+        .error {
+            background: #fed7d7;
+            color: #c53030;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+        .demo-note {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Directus Extensions Search Demo</h1>
+        <p>Search and discover Directus extensions using the registry API</p>
+    </div>
+
+    <div class="demo-note">
+        <strong>Demo Note:</strong> This is a demonstration of how to build a search feature for Directus marketplace extensions. 
+        In a real implementation, you would integrate this with the actual Directus Extensions Registry API.
+    </div>
+
+    <div class="search-container">
+        <input type="text" id="searchInput" class="search-input" placeholder="Search extensions (e.g., 'interface', 'display', 'theme')..." />
+
+        <div class="filters">
+            <select id="typeFilter" class="filter-select">
+                <option value="">All Types</option>
+                <option value="interface">Interface</option>
+                <option value="display">Display</option>
+                <option value="layout">Layout</option>
+                <option value="module">Module</option>
+                <option value="panel">Panel</option>
+                <option value="theme">Theme</option>
+                <option value="hook">Hook</option>
+                <option value="endpoint">Endpoint</option>
+                <option value="operation">Operation</option>
+            </select>
+
+            <select id="sortFilter" class="filter-select">
+                <option value="popular">Most Popular</option>
+                <option value="recent">Most Recent</option>
+                <option value="downloads">Most Downloads</option>
+            </select>
+        </div>
+
+        <button id="searchButton" class="search-button">Search Extensions</button>
+    </div>
+
+    <div class="results-container">
+        <div id="resultsContent">
+            <div class="loading">Click "Search Extensions" to start searching...</div>
+        </div>
+    </div>
+
+    <script>
+        // Demo data that simulates what the registry API would return
+        const sampleExtensions = [
+            {
+                id: 'directus-extension-computed-interface',
+                name: 'Computed Interface',
+                type: 'interface',
+                description: 'Automatically calculate field values based on other fields with support for templating and arithmetic operations.',
+                author: 'rezo-zero',
+                version: '1.2.0',
+                downloads: 12543,
+                lastUpdated: '2024-12-15',
+                sandbox: true
+            },
+            {
+                id: 'directus-extension-simple-currency',
+                name: 'Simple Currency Field',
+                type: 'interface',
+                description: 'A simple and efficient way to handle currency fields with multiple locale support.',
+                author: 'joggienl',
+                version: '1.0.4',
+                downloads: 8234,
+                lastUpdated: '2024-12-10',
+                sandbox: true
+            },
+            {
+                id: 'directus-extension-gantt-layout',
+                name: 'Gantt Chart Layout',
+                type: 'layout',
+                description: 'Display your data as a Gantt chart for project management and timeline visualization.',
+                author: 'directus-community',
+                version: '2.1.0',
+                downloads: 15678,
+                lastUpdated: '2024-12-12',
+                sandbox: false
+            },
+            {
+                id: 'directus-extension-pdf-viewer',
+                name: 'PDF Viewer Display',
+                type: 'display',
+                description: 'View PDF files directly in the Data Studio without downloading them.',
+                author: 'community-dev',
+                version: '1.3.2',
+                downloads: 9876,
+                lastUpdated: '2024-12-08',
+                sandbox: true
+            },
+            {
+                id: 'directus-extension-url-preview',
+                name: 'URL Preview Interface',
+                type: 'interface',
+                description: 'Generate live previews of URLs and web pages directly in your forms.',
+                author: 'web-tools',
+                version: '1.1.0',
+                downloads: 6543,
+                lastUpdated: '2024-12-05',
+                sandbox: true
+            },
+            {
+                id: 'directus-extension-dark-theme',
+                name: 'Professional Dark Theme',
+                type: 'theme',
+                description: 'A sleek dark theme for the Directus Data Studio with customizable accent colors.',
+                author: 'theme-studio',
+                version: '2.0.1',
+                downloads: 23456,
+                lastUpdated: '2024-12-14',
+                sandbox: false
+            },
+            {
+                id: 'directus-extension-charts-panel',
+                name: 'Advanced Charts Panel',
+                type: 'panel',
+                description: 'Create beautiful charts and graphs for your Insights dashboards with Chart.js integration.',
+                author: 'data-viz',
+                version: '1.4.0',
+                downloads: 18765,
+                lastUpdated: '2024-12-11',
+                sandbox: true
+            },
+            {
+                id: 'directus-extension-backup-operation',
+                name: 'Database Backup Operation',
+                type: 'operation',
+                description: 'Automated database backup operation for Flow automation workflows.',
+                author: 'backup-tools',
+                version: '1.0.3',
+                downloads: 4321,
+                lastUpdated: '2024-12-09',
+                sandbox: false
+            }
+        ];
+
+        // Search functionality
+        function searchExtensions() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const typeFilter = document.getElementById('typeFilter').value;
+            const sortFilter = document.getElementById('sortFilter').value;
+            const resultsContent = document.getElementById('resultsContent');
+
+            // Show loading state
+            resultsContent.innerHTML = '<div class="loading">Searching extensions...</div>';
+
+            // Simulate API delay
+            setTimeout(() => {
+                let filteredExtensions = sampleExtensions.filter(ext => {
+                    const matchesSearch = searchTerm === '' || 
+                        ext.name.toLowerCase().includes(searchTerm) ||
+                        ext.description.toLowerCase().includes(searchTerm) ||
+                        ext.type.toLowerCase().includes(searchTerm);
+
+                    const matchesType = typeFilter === '' || ext.type === typeFilter;
+
+                    return matchesSearch && matchesType;
+                });
+
+                // Sort results
+                filteredExtensions.sort((a, b) => {
+                    switch (sortFilter) {
+                        case 'popular':
+                        case 'downloads':
+                            return b.downloads - a.downloads;
+                        case 'recent':
+                            return new Date(b.lastUpdated) - new Date(a.lastUpdated);
+                        default:
+                            return b.downloads - a.downloads;
+                    }
+                });
+
+                // Display results
+                if (filteredExtensions.length === 0) {
+                    resultsContent.innerHTML = '<div class="loading">No extensions found matching your criteria.</div>';
+                } else {
+                    resultsContent.innerHTML = filteredExtensions.map(ext => `
+                        <div class="extension-card">
+                            <div class="extension-title">${ext.name}</div>
+                            <div>
+                                <span class="extension-type">${ext.type}</span>
+                                ${ext.sandbox ? '<span class="extension-type" style="background: #c6f6d5; color: #22543d;">Sandboxed</span>' : ''}
+                            </div>
+                            <div class="extension-description">${ext.description}</div>
+                            <div class="extension-meta">
+                                <span>by ${ext.author}</span>
+                                <span>v${ext.version}</span>
+                                <span>${ext.downloads.toLocaleString()} downloads</span>
+                                <span>Updated ${ext.lastUpdated}</span>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            }, 500);
+        }
+
+        // Event listeners
+        document.getElementById('searchButton').addEventListener('click', searchExtensions);
+        document.getElementById('searchInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                searchExtensions();
+            }
+        });
+
+        // Initial search
+        searchExtensions();
+    </script>
+</body>
+</html>
