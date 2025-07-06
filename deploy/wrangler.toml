@@ -13,6 +13,7 @@ command = "npm run build"
 # Environment variables
 [vars]
 ENVIRONMENT = "production"
+DISABLE_RATE_LIMITING = "true"  # Unlimited requests for self-hosted instances
 
 # KV namespace for caching
 # This will be automatically created during deployment

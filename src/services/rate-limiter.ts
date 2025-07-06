@@ -13,21 +13,62 @@ interface RateLimitEntry {
 
 export class RateLimiterService {
   private static readonly RATE_LIMIT_PREFIX = 'ratelimit:';
-  private static readonly REQUESTS_PER_HOUR = 100;
-  private static readonly REQUESTS_PER_DAY = 500;
   private static readonly HOUR_MS = 60 * 60 * 1000;
   private static readonly DAY_MS = 24 * 60 * 60 * 1000;
 
   constructor(private env: Env) {}
 
+  private getRequestsPerHour(): number {
+    // Check if rate limiting is explicitly disabled
+    if (this.env.DISABLE_RATE_LIMITING === 'true') {
+      return Infinity;
+    }
+    
+    // Default limits for public server
+    if (this.env.ENVIRONMENT === 'development') {
+      return 100; // Use limits on our public development server
+    }
+    
+    // For other deployments (user's own), default to unlimited
+    return Infinity;
+  }
+
+  private getRequestsPerDay(): number {
+    // Check if rate limiting is explicitly disabled
+    if (this.env.DISABLE_RATE_LIMITING === 'true') {
+      return Infinity;
+    }
+    
+    // Default limits for public server
+    if (this.env.ENVIRONMENT === 'development') {
+      return 500; // Use limits on our public development server
+    }
+    
+    // For other deployments (user's own), default to unlimited
+    return Infinity;
+  }
+
   async checkRateLimit(clientIP: string): Promise<RateLimitResult> {
     const now = Date.now();
+    const hourlyLimit = this.getRequestsPerHour();
+    const dailyLimit = this.getRequestsPerDay();
+    
+    // If limits are infinite (self-hosted), always allow
+    if (hourlyLimit === Infinity && dailyLimit === Infinity) {
+      return {
+        allowed: true,
+        reason: null,
+        resetTime: now + RateLimiterService.HOUR_MS,
+        remaining: Infinity,
+        limit: Infinity
+      };
+    }
     
     // Check hourly limit
     const hourlyKey = `${RateLimiterService.RATE_LIMIT_PREFIX}hourly:${clientIP}`;
     const hourlyResult = await this.checkLimit(
       hourlyKey,
-      RateLimiterService.REQUESTS_PER_HOUR,
+      hourlyLimit,
       RateLimiterService.HOUR_MS,
       now
     );
@@ -38,7 +79,7 @@ export class RateLimiterService {
         reason: 'hourly_limit_exceeded',
         resetTime: hourlyResult.resetTime,
         remaining: 0,
-        limit: RateLimiterService.REQUESTS_PER_HOUR
+        limit: hourlyLimit
       };
     }
 
@@ -46,7 +87,7 @@ export class RateLimiterService {
     const dailyKey = `${RateLimiterService.RATE_LIMIT_PREFIX}daily:${clientIP}`;
     const dailyResult = await this.checkLimit(
       dailyKey,
-      RateLimiterService.REQUESTS_PER_DAY,
+      dailyLimit,
       RateLimiterService.DAY_MS,
       now
     );
@@ -57,7 +98,7 @@ export class RateLimiterService {
         reason: 'daily_limit_exceeded',
         resetTime: dailyResult.resetTime,
         remaining: 0,
-        limit: RateLimiterService.REQUESTS_PER_DAY
+        limit: dailyLimit
       };
     }
 
@@ -69,8 +110,8 @@ export class RateLimiterService {
       allowed: true,
       reason: null,
       resetTime: hourlyResult.resetTime,
-      remaining: RateLimiterService.REQUESTS_PER_HOUR - hourlyResult.entry.count - 1,
-      limit: RateLimiterService.REQUESTS_PER_HOUR
+      remaining: hourlyLimit - hourlyResult.entry.count - 1,
+      limit: hourlyLimit
     };
   }
 
@@ -149,6 +190,8 @@ export class RateLimiterService {
 
   async getUsageStats(clientIP: string): Promise<UsageStats> {
     const now = Date.now();
+    const hourlyLimit = this.getRequestsPerHour();
+    const dailyLimit = this.getRequestsPerDay();
     
     const hourlyKey = `${RateLimiterService.RATE_LIMIT_PREFIX}hourly:${clientIP}`;
     const dailyKey = `${RateLimiterService.RATE_LIMIT_PREFIX}daily:${clientIP}`;
@@ -169,14 +212,14 @@ export class RateLimiterService {
     return {
       hourly: {
         used: hourlyEntry.count,
-        limit: RateLimiterService.REQUESTS_PER_HOUR,
-        remaining: Math.max(0, RateLimiterService.REQUESTS_PER_HOUR - hourlyEntry.count),
+        limit: hourlyLimit,
+        remaining: hourlyLimit === Infinity ? Infinity : Math.max(0, hourlyLimit - hourlyEntry.count),
         resetTime: hourlyEntry.resetTime
       },
       daily: {
         used: dailyEntry.count,
-        limit: RateLimiterService.REQUESTS_PER_DAY,
-        remaining: Math.max(0, RateLimiterService.REQUESTS_PER_DAY - dailyEntry.count),
+        limit: dailyLimit,
+        remaining: dailyLimit === Infinity ? Infinity : Math.max(0, dailyLimit - dailyEntry.count),
         resetTime: dailyEntry.resetTime
       }
     };

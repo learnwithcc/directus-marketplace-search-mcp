@@ -6,6 +6,7 @@ export interface Env {
   // Environment variables
   ENVIRONMENT: string;
   DIRECTUS_API_TOKEN?: string;
+  DISABLE_RATE_LIMITING?: string;
   
   // Analytics (optional)
   ANALYTICS?: AnalyticsEngineDataset;

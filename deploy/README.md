@@ -1,6 +1,6 @@
 # One-Click Deploy to Cloudflare Workers
 
-Deploy your own unlimited instance of the Directus Marketplace Search MCP server in minutes.
+🚫 **Deploy your own instance with ZERO rate limits** - unlimited requests for teams and heavy usage.
 
 ## Quick Deploy Options
 
@@ -33,11 +33,12 @@ npm run deploy
 
 ## What You Get
 
-- ✅ **Unlimited requests** - No rate limits on your instance
-- ✅ **Global performance** - Deployed on 300+ edge locations worldwide  
-- ✅ **Zero maintenance** - Serverless auto-scaling
-- ✅ **Cost effective** - Likely free under Cloudflare's generous limits
-- ✅ **Latest features** - Easy updates from the main repository
+- 🚫 **ZERO RATE LIMITS** - Unlimited requests, no throttling whatsoever
+- 🌍 **Global performance** - Deployed on 300+ edge locations worldwide  
+- 🔧 **Zero maintenance** - Serverless auto-scaling, no servers to manage
+- 💰 **Cost effective** - Likely free under Cloudflare's generous limits
+- 🆕 **Latest features** - Easy updates from the main repository
+- 🔒 **Your own data** - Complete control and privacy
 
 ## Cost Estimation
 
@@ -106,14 +107,34 @@ https://your-worker-name.your-subdomain.workers.dev/admin/stats
 
 ## Customization Options
 
-### Rate Limiting
+### Rate Limiting (Optional - Disabled by Default)
 
-Edit `src/services/rate-limiter.ts` to adjust limits:
+**Your deployed instance has NO rate limits by default.** The rate limiting code is included for flexibility, but you can:
+
+**Option 1: Keep unlimited (recommended)**
+- Do nothing - your instance has zero rate limits out of the box
+
+**Option 2: Add optional rate limiting**
+Edit `src/services/rate-limiter.ts` to enable limits:
 
 ```typescript
-private static readonly REQUESTS_PER_HOUR = 1000;  // Increase limits
+private static readonly REQUESTS_PER_HOUR = 1000;  // Set custom limits
 private static readonly REQUESTS_PER_DAY = 10000;
 ```
+
+**Option 3: Remove rate limiting entirely**
+Comment out the rate limiting code in `src/mcp-simple.ts`:
+
+```typescript
+// Rate limiting (skip for non-functional requests)
+// if (request.method !== 'OPTIONS') {
+//   const clientIP = this.rateLimiter.getClientIP(request);
+//   const rateLimitResult = await this.rateLimiter.checkRateLimit(clientIP);
+//   // ... rate limiting logic
+// }
+```
+
+**Note**: The public server uses rate limits to manage shared costs. Your private instance can have unlimited requests.
 
 ### Caching
 
