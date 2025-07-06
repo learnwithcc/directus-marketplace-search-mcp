@@ -1,0 +1,33 @@
+{
+  "name": "directus-marketplace-mcp",
+  "version": "1.0.0",
+  "description": "NPX package to easily connect to the Directus Marketplace Search MCP server",
+  "main": "index.js",
+  "bin": {
+    "directus-marketplace-mcp": "./index.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "directus",
+    "marketplace",
+    "mcp",
+    "model-context-protocol",
+    "extensions",
+    "search"
+  ],
+  "author": "Focus Lab",
+  "license": "MIT",
+  "dependencies": {
+    "mcp-remote": "^1.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/learnwithcc/directus-marketplace-search-mcp.git"
+  },
+  "homepage": "https://directus-marketplace-search-mcp.focuslab.workers.dev",
+  "bugs": {
+    "url": "https://github.com/learnwithcc/directus-marketplace-search-mcp/issues"
+  }
+}

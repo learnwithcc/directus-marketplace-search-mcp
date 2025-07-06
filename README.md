@@ -13,67 +13,64 @@ A production-ready [Model Context Protocol (MCP)](https://modelcontextprotocol.i
 - 💬 **Conversational Results**: AI-friendly responses for natural interactions
 - 📊 **Real-time Data**: Direct integration with npm registry for up-to-date results
 - 🖥️ **Universal Compatibility**: Works with Claude Desktop, web clients, and custom MCP implementations
+- 🚦 **Smart Rate Limiting**: 100 requests/hour, 500 requests/day with upgrade messaging
+- 📈 **Usage Monitoring**: Real-time analytics and cost estimation
+- 📦 **NPX Package**: Easy installation with `npx directus-marketplace-mcp`
+- 🔄 **One-Click Deploy**: Deploy your own unlimited instance in minutes
 
 ## Quick Start
 
-### Use the Public Server (Recommended)
+### Option 1: NPX (Easiest)
 
-The easiest way to get started is using our hosted server:
+```bash
+npx directus-marketplace-mcp
+```
 
-**For Claude Desktop**, add this to your `~/.claude/claude_desktop_config.json`:
+### Option 2: Claude Desktop
+
+Add this to your `~/.claude/claude_desktop_config.json`:
 
 ```json
 {
   "mcpServers": {
     "directus-marketplace": {
       "command": "npx",
-      "args": [
-        "mcp-remote",
-        "https://directus-marketplace-search-mcp.focuslab.workers.dev/mcp"
-      ]
+      "args": ["directus-marketplace-mcp"]
     }
   }
 }
 ```
 
+### Option 3: Direct Connection
+
 **For Custom MCP Clients**:
 - Server URL: `https://directus-marketplace-search-mcp.focuslab.workers.dev/mcp`
 - Protocol Versions: `2024-11-05`, `2025-06-18` (auto-negotiated)
+- Rate Limits: 100 requests/hour, 500 requests/day
 
-### Deploy Your Own Instance
+### Option 4: Deploy Your Own (Unlimited)
 
-#### Prerequisites
+[![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/learnwithcc/directus-marketplace-search-mcp)
 
-- [Node.js 20+](https://nodejs.org/)
-- [Cloudflare Account](https://cloudflare.com/)
-- [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/install-and-update/)
+```bash
+git clone https://github.com/learnwithcc/directus-marketplace-search-mcp.git
+cd directus-marketplace-search-mcp
+chmod +x deploy/deploy.sh
+./deploy/deploy.sh
+```
 
-#### Installation
+## Rate Limits & Monitoring
 
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/learnwithcc/directus-marketplace-search-mcp.git
-   cd directus-marketplace-search-mcp
-   ```
+Our public server includes intelligent rate limiting:
 
-2. **Install dependencies**:
-   ```bash
-   npm install
-   ```
+- **Hourly Limit**: 100 requests per IP address
+- **Daily Limit**: 500 requests per IP address  
+- **Headers**: Rate limit info included in all responses
+- **Monitoring**: Real-time usage tracking and cost estimation
 
-3. **Configure Cloudflare**:
-   ```bash
-   # Login to Cloudflare
-   wrangler login
-   
-   # Verify your account
-   wrangler whoami
-   ```
+**Check your usage**: Visit `/usage` endpoint or `/admin/stats` for detailed analytics.
 
-4. **Deploy to Cloudflare Workers**:
-   ```bash
-   npm run deploy
-   ```
+**Need more?** Deploy your own unlimited instance using the one-click deploy option above.
 
 ## MCP Tools
 
@@ -119,6 +116,8 @@ When deployed, the server exposes these HTTP endpoints:
 
 - **`/mcp`**: MCP protocol endpoint with automatic version negotiation
 - **`/health`**: Health check endpoint  
+- **`/usage`**: Personal usage statistics and rate limit info
+- **`/admin/stats`**: Server-wide analytics and cost estimation
 - **`/`**: Server information, supported protocol versions, and available tools
 
 ## Development

@@ -5,6 +5,8 @@
 
 import type { Env } from './types/worker.js';
 import { DirectusSearchService } from './services/directus.js';
+import { RateLimiterService } from './services/rate-limiter.js';
+import { MonitoringService } from './services/monitoring.js';
 import { validateSearchParams } from './utils/validation.js';
 import { z } from 'zod';
 
@@ -48,11 +50,15 @@ interface McpServerInfo {
 
 export class SimpleMCPServer {
   private searchService: DirectusSearchService;
+  private rateLimiter: RateLimiterService;
+  private monitoring: MonitoringService;
   private serverInfo: McpServerInfo;
   private sessions: Map<string, { created: number }> = new Map();
 
   constructor(private env: Env) {
     this.searchService = new DirectusSearchService(env);
+    this.rateLimiter = new RateLimiterService(env);
+    this.monitoring = new MonitoringService(env);
     this.serverInfo = {
       name: 'directus-marketplace-search',
       version: '1.0.0',
@@ -67,6 +73,8 @@ export class SimpleMCPServer {
   }
 
   async handleRequest(request: Request): Promise<Response> {
+    const startTime = Date.now();
+    
     // Get origin for proper CORS handling
     const origin = request.headers.get('Origin');
     const userAgent = request.headers.get('User-Agent');
@@ -96,20 +104,83 @@ export class SimpleMCPServer {
       });
     }
 
-    // Handle different HTTP methods
-    switch (request.method) {
-      case 'GET':
-        return await this.handleGetRequest(request, corsHeaders);
-      case 'POST':
-        return await this.handlePostRequest(request, corsHeaders);
-      case 'DELETE':
-        return await this.handleDeleteRequest(request, corsHeaders);
-      default:
-        return new Response('Method not allowed', { 
-          status: 405,
-          headers: corsHeaders 
+    // Rate limiting (skip for non-functional requests)
+    if (request.method !== 'OPTIONS') {
+      const clientIP = this.rateLimiter.getClientIP(request);
+      const rateLimitResult = await this.rateLimiter.checkRateLimit(clientIP);
+      
+      if (!rateLimitResult.allowed) {
+        const resetTime = new Date(rateLimitResult.resetTime).toISOString();
+        const errorMessage = rateLimitResult.reason === 'hourly_limit_exceeded' 
+          ? `Rate limit exceeded. You can make ${rateLimitResult.limit} requests per hour. Try again after ${resetTime}.`
+          : `Daily rate limit exceeded. You can make ${rateLimitResult.limit} requests per day. Try again after ${resetTime}.`;
+        
+        return new Response(JSON.stringify({
+          error: 'Rate limit exceeded',
+          message: errorMessage,
+          resetTime: resetTime,
+          limit: rateLimitResult.limit,
+          upgradeMessage: 'For unlimited access, deploy your own instance using our one-click template at https://github.com/learnwithcc/directus-marketplace-search-mcp'
+        }), {
+          status: 429,
+          headers: {
+            'Content-Type': 'application/json',
+            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': rateLimitResult.resetTime.toString(),
+            'Retry-After': Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000).toString(),
+            ...corsHeaders
+          }
         });
+      }
+      
+      // Add rate limit headers to successful responses
+      (corsHeaders as any)['X-RateLimit-Limit'] = rateLimitResult.limit.toString();
+      (corsHeaders as any)['X-RateLimit-Remaining'] = rateLimitResult.remaining.toString();
+      (corsHeaders as any)['X-RateLimit-Reset'] = rateLimitResult.resetTime.toString();
     }
+
+    // Handle different HTTP methods
+    let response: Response;
+    let toolName: string | undefined;
+    
+    try {
+      switch (request.method) {
+        case 'GET':
+          response = await this.handleGetRequest(request, corsHeaders);
+          break;
+        case 'POST':
+          response = await this.handlePostRequest(request, corsHeaders);
+          // Try to extract tool name from successful POST responses
+          if (response.status === 200) {
+            toolName = await this.extractToolNameFromRequest(request);
+          }
+          break;
+        case 'DELETE':
+          response = await this.handleDeleteRequest(request, corsHeaders);
+          break;
+        default:
+          response = new Response('Method not allowed', { 
+            status: 405,
+            headers: corsHeaders 
+          });
+      }
+    } catch (error) {
+      console.error('Request handling error:', error);
+      response = new Response('Internal Server Error', {
+        status: 500,
+        headers: corsHeaders
+      });
+    }
+    
+    // Track the request
+    const responseTime = Date.now() - startTime;
+    const success = response.status < 400;
+    const errorCode = success ? undefined : response.status;
+    
+    this.monitoring.trackRequest(request, success, responseTime, errorCode, toolName);
+    
+    return response;
   }
 
   private async handleGetRequest(request: Request, corsHeaders: Record<string, string>): Promise<Response> {
@@ -255,6 +326,28 @@ export class SimpleMCPServer {
 
   private generateSessionId(): string {
     return crypto.randomUUID();
+  }
+
+  private async extractToolNameFromRequest(request: Request): Promise<string | undefined> {
+    try {
+      // Clone the request to read the body without consuming it
+      const cloned = request.clone();
+      const text = await cloned.text();
+      
+      if (!text.trim()) {
+        return undefined;
+      }
+      
+      const jsonRpcRequest = JSON.parse(text);
+      
+      if (jsonRpcRequest.method === 'tools/call' && jsonRpcRequest.params?.name) {
+        return jsonRpcRequest.params.name;
+      }
+    } catch (error) {
+      // Ignore errors, just return undefined
+    }
+    
+    return undefined;
   }
 
   private async handleJsonRpcRequest(jsonRpcRequest: JsonRpcRequest, httpRequest: Request): Promise<JsonRpcResponse> {

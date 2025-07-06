@@ -1,0 +1,60 @@
+# Cloudflare Workers Configuration Template
+# Copy this file to your project root and customize as needed
+
+name = "directus-marketplace-search-mcp"
+main = "dist/index.js"
+compatibility_date = "2024-04-05"
+compatibility_flags = ["nodejs_compat"]
+
+# Build configuration
+[build]
+command = "npm run build"
+
+# Environment variables
+[vars]
+ENVIRONMENT = "production"
+
+# KV namespace for caching
+# This will be automatically created during deployment
+[[kv_namespaces]]
+binding = "CACHE"
+id = "YOUR_KV_NAMESPACE_ID"  # Will be set automatically
+
+# Optional: Analytics Engine for detailed tracking
+# Uncomment to enable advanced analytics
+# [[analytics_engine_datasets]]
+# binding = "ANALYTICS"  
+# dataset = "directus_mcp_analytics"
+
+# Optional: Durable Objects for advanced session management
+# Uncomment if you want to implement advanced features
+# [durable_objects]
+# bindings = [
+#   { name = "SESSIONS", class_name = "SessionManager" }
+# ]
+
+# Development environment override
+[env.development]
+vars = { ENVIRONMENT = "development" }
+
+[env.development.kv_namespaces]
+binding = "CACHE"
+id = "YOUR_DEV_KV_NAMESPACE_ID"  # Separate namespace for development
+
+# Staging environment
+[env.staging]  
+vars = { ENVIRONMENT = "staging" }
+
+[env.staging.kv_namespaces]
+binding = "CACHE"
+id = "YOUR_STAGING_KV_NAMESPACE_ID"
+
+# Production environment (default)
+[env.production]
+vars = { ENVIRONMENT = "production" }
+
+# Optional: Custom domain configuration
+# Uncomment and configure after setting up your domain in Cloudflare
+# [[routes]]
+# pattern = "your-domain.com/mcp"
+# zone_name = "your-domain.com"

@@ -5,6 +5,8 @@
 
 import type { Env } from './types/worker.js';
 import { SimpleMCPServer } from './mcp-simple.js';
+import { RateLimiterService } from './services/rate-limiter.js';
+import { MonitoringService } from './services/monitoring.js';
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -42,6 +44,45 @@ export default {
         });
       }
 
+      // Usage statistics endpoint
+      if (url.pathname === '/usage') {
+        const rateLimiter = new RateLimiterService(env);
+        const clientIP = rateLimiter.getClientIP(request);
+        const stats = await rateLimiter.getUsageStats(clientIP);
+        
+        return new Response(JSON.stringify({
+          ip: clientIP,
+          usage: stats,
+          upgradeMessage: 'For unlimited access, deploy your own instance using our template',
+          deployUrl: 'https://github.com/learnwithcc/directus-marketplace-search-mcp'
+        }), {
+          headers: { 
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          }
+        });
+      }
+
+      // Admin monitoring endpoint (basic auth could be added here)
+      if (url.pathname === '/admin/stats') {
+        const monitoring = new MonitoringService(env);
+        const summary = await monitoring.getUsageSummary();
+        
+        return new Response(JSON.stringify({
+          summary,
+          serverInfo: {
+            version: '1.0.0',
+            deployment: 'cloudflare-workers',
+            timestamp: new Date().toISOString()
+          }
+        }), {
+          headers: { 
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          }
+        });
+      }
+
       // MCP endpoint - Streamable HTTP transport (2025-03-26)
       if (url.pathname === '/mcp') {
         const mcpServer = new SimpleMCPServer(env);
@@ -58,7 +99,9 @@ export default {
           supportedProtocolVersions: ['2024-11-05', '2025-06-18'],
           endpoints: {
             mcp: '/mcp',
-            health: '/health'
+            health: '/health',
+            usage: '/usage',
+            stats: '/admin/stats'
           },
           tools: [
             'search_extensions',
