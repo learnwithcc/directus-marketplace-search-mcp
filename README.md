@@ -1,8 +1,6 @@
 # Directus Marketplace Search MCP Server
 
-A high-performance [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server for searching the Directus Marketplace, deployed on Cloudflare Workers for global edge performance.
-
-[![Deploy to Cloudflare Workers](https://github.com/learnwithcc/directus-marketplace-search-mcp/actions/workflows/deploy.yml/badge.svg)](https://github.com/learnwithcc/directus-marketplace-search-mcp/actions/workflows/deploy.yml)
+A production-ready [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server that enables AI assistants to search and discover Directus extensions. Deployed on Cloudflare Workers for global edge performance with intelligent protocol version negotiation.
 
 ## Features
 
@@ -11,18 +9,46 @@ A high-performance [Model Context Protocol (MCP)](https://modelcontextprotocol.i
 - 📦 **Extension Categories**: Filter by interface, display, layout, panel, module, hook, endpoint, operation, theme
 - ⚡ **Smart Caching**: Workers KV caching for sub-second response times
 - 🛡️ **Security First**: Input validation, sanitization, and rate limiting
-- 🌐 **HTTP Transport**: Modern MCP implementation with SSE support
+- 🌐 **Protocol Negotiation**: Supports both 2024-11-05 and 2025-06-18 MCP versions
+- 💬 **Conversational Results**: AI-friendly responses for natural interactions
 - 📊 **Real-time Data**: Direct integration with npm registry for up-to-date results
+- 🖥️ **Universal Compatibility**: Works with Claude Desktop, web clients, and custom MCP implementations
 
 ## Quick Start
 
-### Prerequisites
+### Use the Public Server (Recommended)
+
+The easiest way to get started is using our hosted server:
+
+**For Claude Desktop**, add this to your `~/.claude/claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "directus-marketplace": {
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "https://directus-marketplace-search-mcp.focuslab.workers.dev/mcp"
+      ]
+    }
+  }
+}
+```
+
+**For Custom MCP Clients**:
+- Server URL: `https://directus-marketplace-search-mcp.focuslab.workers.dev/mcp`
+- Protocol Versions: `2024-11-05`, `2025-06-18` (auto-negotiated)
+
+### Deploy Your Own Instance
+
+#### Prerequisites
 
 - [Node.js 20+](https://nodejs.org/)
 - [Cloudflare Account](https://cloudflare.com/)
 - [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/install-and-update/)
 
-### Installation
+#### Installation
 
 1. **Clone the repository**:
    ```bash
@@ -51,10 +77,10 @@ A high-performance [Model Context Protocol (MCP)](https://modelcontextprotocol.i
 
 ## MCP Tools
 
-The server provides three main MCP tools:
+The server provides three AI-friendly tools that return conversational responses:
 
 ### 1. `search_extensions`
-Search Directus marketplace extensions with flexible filtering.
+Search Directus marketplace extensions with intelligent filtering and popularity indicators.
 
 **Parameters**:
 - `query` (required): Search term for extension name, description, or keywords
@@ -63,53 +89,37 @@ Search Directus marketplace extensions with flexible filtering.
 - `offset` (optional): Pagination offset (default: 0)
 - `sort` (optional): Sort order (`relevance`, `downloads`, `updated`, `created`)
 
-**Example**:
-```json
-{
-  "name": "search_extensions",
-  "arguments": {
-    "query": "authentication",
-    "category": "hooks",
-    "limit": 5,
-    "sort": "downloads"
-  }
-}
+**Example Response**:
+```
+I found 3 Directus extensions for "AI"!
+
+**@directus-labs/ai-writer-operation** (Very popular!)
+Use OpenAI, Claude, Meta and Mistral Text Generation APIs to generate text.
+[View on NPM](https://www.npmjs.com/package/@directus-labs/ai-writer-operation)
+
+**directus-extension-ai-agent** (Moderately popular)
+Transform your Directus CMS with intelligent automation and natural language processing.
+[View on GitHub](https://github.com/cryptoraichu/directus-extension-ai-agent)
 ```
 
 ### 2. `get_extension_details`
-Retrieve detailed information about a specific extension.
+Retrieve comprehensive information about a specific extension with installation guidance.
 
 **Parameters**:
 - `name` (required): Package name (e.g., `directus-extension-display-link`)
 
-**Example**:
-```json
-{
-  "name": "get_extension_details",
-  "arguments": {
-    "name": "directus-extension-display-link"
-  }
-}
-```
-
 ### 3. `get_extension_categories`
-List all available extension categories with descriptions.
+List all available extension categories with helpful descriptions and guidance.
 
-**Example**:
-```json
-{
-  "name": "get_extension_categories",
-  "arguments": {}
-}
-```
+**Returns**: Formatted guide to extension types with practical explanations.
 
 ## API Endpoints
 
 When deployed, the server exposes these HTTP endpoints:
 
-- **`/mcp`**: MCP protocol endpoint for tool interactions
-- **`/health`**: Health check endpoint
-- **`/`**: Server information and available endpoints
+- **`/mcp`**: MCP protocol endpoint with automatic version negotiation
+- **`/health`**: Health check endpoint  
+- **`/`**: Server information, supported protocol versions, and available tools
 
 ## Development
 
@@ -145,17 +155,17 @@ npm run test:run
 ```
 directus-marketplace-search-mcp/
 ├── src/
-│   ├── index.ts              # Main MCP server
+│   ├── index.ts              # Main worker entry point
+│   ├── mcp-simple.ts         # MCP server with protocol negotiation
 │   ├── services/
-│   │   ├── directus.ts       # Directus API integration
+│   │   ├── directus.ts       # npm registry API integration
 │   │   └── cache.ts          # Workers KV caching
 │   ├── types/
 │   │   ├── worker.ts         # Cloudflare Worker types
-│   │   └── directus.ts       # Directus API types
+│   │   └── directus.ts       # Extension and search types
 │   └── utils/
-│       └── validation.ts     # Input validation
-├── scripts/
-│   └── deploy.sh            # Deployment script
+│       └── validation.ts     # Input validation and sanitization
+├── demo/                     # Example implementations and tests
 ├── .github/workflows/
 │   └── deploy.yml           # CI/CD pipeline
 └── wrangler.toml            # Cloudflare Workers config
@@ -206,13 +216,15 @@ wrangler kv:namespace create "CACHE"
 - **Sub-second Response**: Intelligent caching with Workers KV
 - **Concurrent Requests**: Handles thousands of simultaneous requests
 - **Zero Cold Starts**: Cloudflare Workers architecture
+- **Protocol Negotiation**: Automatic version selection for optimal compatibility
 
 ## Security
 
 - **Input Sanitization**: All user inputs are validated and sanitized
 - **Rate Limiting**: Built-in protection against abuse
-- **CORS Support**: Secure cross-origin resource sharing
+- **CORS Support**: Secure cross-origin resource sharing with intelligent origin handling
 - **No Secrets in Code**: Environment-based configuration
+- **Protocol Security**: Supports secure MCP transport with session management
 
 ## API Integration
 
@@ -251,4 +263,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 Built with ❤️ for the Directus community
 
-🤖 *Initial implementation generated with [Claude Code](https://claude.ai/code)*
+🤖 *Powered by [Claude Code](https://claude.ai/code)*
+
+## Live Server
+
+🌐 **Public Instance**: `https://directus-marketplace-search-mcp.focuslab.workers.dev/mcp`
+
+Ready to use with Claude Desktop, MCP clients, and custom integrations!

@@ -6,14 +6,9 @@ compatibility_flags = ["nodejs_compat"]
 [build]
 command = "npm run build"
 
-[build.upload]
-format = "modules"
-main = "./dist/index.js"
-
 [[kv_namespaces]]
 binding = "CACHE"
-id = "your-kv-namespace-id"
-preview_id = "your-preview-kv-namespace-id"
+id = "45941015c56f4889a9b797948b1559ca"
 
 [vars]
 ENVIRONMENT = "development"
