@@ -11,7 +11,7 @@ binding = "CACHE"
 id = "45941015c56f4889a9b797948b1559ca"
 
 [vars]
-ENVIRONMENT = "development"
+ENVIRONMENT = "production"
 
 # Add secrets using: wrangler secret put SECRET_NAME
 # Example secrets to configure:

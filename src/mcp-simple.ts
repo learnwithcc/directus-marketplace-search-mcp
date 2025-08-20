@@ -53,7 +53,7 @@ export class SimpleMCPServer {
   private rateLimiter: RateLimiterService;
   private monitoring: MonitoringService;
   private serverInfo: McpServerInfo;
-  private sessions: Map<string, { created: number }> = new Map();
+  // Simplified session tracking - no persistent storage needed
 
   constructor(private env: Env) {
     this.searchService = new DirectusSearchService(env);
@@ -104,8 +104,28 @@ export class SimpleMCPServer {
       });
     }
 
-    // Rate limiting (skip for non-functional requests)
-    if (request.method !== 'OPTIONS') {
+    // Determine if this is a tool call that needs rate limiting
+    let isToolCall = false;
+    let toolName: string | undefined;
+    
+    if (request.method === 'POST') {
+      try {
+        const cloned = request.clone();
+        const text = await cloned.text();
+        if (text.trim()) {
+          const jsonRpcRequest = JSON.parse(text);
+          isToolCall = jsonRpcRequest.method === 'tools/call';
+          if (isToolCall && jsonRpcRequest.params?.name) {
+            toolName = jsonRpcRequest.params.name;
+          }
+        }
+      } catch (e) {
+        // Ignore parsing errors here, will be handled later
+      }
+    }
+
+    // Only apply rate limiting to actual tool calls
+    if (isToolCall) {
       const clientIP = this.rateLimiter.getClientIP(request);
       const rateLimitResult = await this.rateLimiter.checkRateLimit(clientIP);
       
@@ -142,7 +162,6 @@ export class SimpleMCPServer {
 
     // Handle different HTTP methods
     let response: Response;
-    let toolName: string | undefined;
     
     try {
       switch (request.method) {
@@ -151,10 +170,6 @@ export class SimpleMCPServer {
           break;
         case 'POST':
           response = await this.handlePostRequest(request, corsHeaders);
-          // Try to extract tool name from successful POST responses
-          if (response.status === 200) {
-            toolName = await this.extractToolNameFromRequest(request);
-          }
           break;
         case 'DELETE':
           response = await this.handleDeleteRequest(request, corsHeaders);
@@ -173,12 +188,14 @@ export class SimpleMCPServer {
       });
     }
     
-    // Track the request
-    const responseTime = Date.now() - startTime;
-    const success = response.status < 400;
-    const errorCode = success ? undefined : response.status;
-    
-    this.monitoring.trackRequest(request, success, responseTime, errorCode, toolName);
+    // Only track tool calls to reduce KV usage
+    if (isToolCall) {
+      const responseTime = Date.now() - startTime;
+      const success = response.status < 400;
+      const errorCode = success ? undefined : response.status;
+      
+      this.monitoring.trackRequest(request, success, responseTime, errorCode, toolName);
+    }
     
     return response;
   }
@@ -257,16 +274,11 @@ export class SimpleMCPServer {
       
       const response = await this.handleJsonRpcRequest(jsonRpcRequest, request);
       
-      // Check if this was an initialize request and set session header
+      // Standard response headers
       const responseHeaders: Record<string, string> = {
         'Content-Type': 'application/json',
         ...corsHeaders
       };
-      
-      if (jsonRpcRequest.method === 'initialize' && (request as any)._sessionId) {
-        responseHeaders['Mcp-Session-Id'] = (request as any)._sessionId;
-        console.log('Setting session header:', (request as any)._sessionId);
-      }
       
       const responseBody = JSON.stringify(response);
       console.log('Sending response:', responseBody);
@@ -298,12 +310,8 @@ export class SimpleMCPServer {
   }
 
   private async handleDeleteRequest(request: Request, corsHeaders: Record<string, string>): Promise<Response> {
-    const sessionId = request.headers.get('Mcp-Session-Id');
-    
-    if (sessionId && this.sessions.has(sessionId)) {
-      this.sessions.delete(sessionId);
-      console.log(`Session ${sessionId} terminated`);
-    }
+    // Stateless - no session cleanup needed
+    console.log('MCP connection terminated');
     
     return new Response('', {
       status: 204,
@@ -312,13 +320,12 @@ export class SimpleMCPServer {
   }
 
   private async handleSSERequest(request: Request, corsHeaders: Record<string, string>): Promise<Response> {
-    // For now, return a basic SSE response
-    // In a full implementation, this would establish an SSE stream
-    return new Response('event: connected\ndata: {"connected": true}\n\n', {
+    // Return a minimal SSE response that closes quickly to avoid persistent connections
+    return new Response('event: connected\ndata: {"connected": true}\nevent: close\ndata: {"status": "ready"}\n\n', {
       headers: {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
+        'Connection': 'close', // Changed from keep-alive to close
         ...corsHeaders
       }
     });
@@ -411,15 +418,9 @@ export class SimpleMCPServer {
   }
 
   private async handleInitialize(params: any, httpRequest: Request): Promise<any> {
-    // Generate session ID for this connection
-    const sessionId = this.generateSessionId();
-    this.sessions.set(sessionId, { created: Date.now() });
-    
-    console.log(`New session created: ${sessionId}`);
+    // Stateless initialization - no session storage needed
+    console.log('MCP client initializing');
     console.log('Client requested protocol version:', params?.protocolVersion);
-    
-    // Set session ID in response headers for the calling method to use
-    (httpRequest as any)._sessionId = sessionId;
     
     // Support both protocol versions
     const clientProtocolVersion = params?.protocolVersion;
