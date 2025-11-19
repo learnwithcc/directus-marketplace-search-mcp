@@ -1,8 +1,29 @@
 # Directus Marketplace Search MCP Server
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue.svg)](https://www.typescriptlang.org/)
+[![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-orange.svg)](https://workers.cloudflare.com/)
+[![MCP Protocol](https://img.shields.io/badge/MCP-2024--11--05%20|%202025--06--18-green.svg)](https://modelcontextprotocol.io/)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+
 🔍 **Search and discover Directus extensions directly from your AI assistant**
 
 An intelligent [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server that enables AI assistants like Claude, Cursor, and others to search the Directus marketplace. Get conversational recommendations for Directus extensions with popularity indicators, descriptions, and direct links.
+
+---
+
+## 📑 Table of Contents
+
+- [Quick Start](#-for-users-get-started-in-30-seconds)
+- [What You Can Ask](#-what-you-can-ask)
+- [Free vs Unlimited](#-free-vs-unlimited)
+- [Deploy Your Own](#-deploy-your-own-no-rate-limits)
+- [Available Tools](#️-available-tools--features)
+- [Usage Monitoring](#-usage-monitoring)
+- [Support](#-support--help)
+- [For Developers](#-for-developers-technical-documentation)
+- [Contributing](#contributing)
+- [License](#license)
 
 ---
 
@@ -406,17 +427,42 @@ The server integrates with the npm registry API to access Directus extensions:
 - **Caching**: 5-minute cache for search results, 1-hour for package details
 - **Rate Limiting**: Respectful API usage with built-in throttling
 
-### Contributing
+## Contributing
 
+We welcome contributions from the community! Whether you're fixing bugs, adding features, or improving documentation, your help is appreciated.
+
+**Quick Start:**
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Commit changes: `git commit -m 'Add amazing feature'`
-4. Push to branch: `git push origin feature/amazing-feature`
-5. Open a Pull Request
+3. Make your changes following our [coding standards](CONTRIBUTING.md#coding-standards)
+4. Commit with clear messages: `git commit -m 'feat: add amazing feature'`
+5. Push to your fork: `git push origin feature/amazing-feature`
+6. Open a Pull Request
 
-### License
+**For detailed guidelines, see [CONTRIBUTING.md](CONTRIBUTING.md)**
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+### Development
+
+```bash
+# Setup
+git clone https://github.com/learnwithcc/directus-marketplace-search-mcp.git
+cd directus-marketplace-search-mcp
+npm install
+
+# Development workflow
+npm run dev          # Start local server
+npm run type-check   # Check TypeScript
+npm run lint         # Check code style
+npm test            # Run tests
+```
+
+## License
+
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for full details.
+
+**TL;DR:** You can use, modify, and distribute this software freely, even commercially, as long as you include the original copyright notice.
+
+---
 
 ### Related Projects
 

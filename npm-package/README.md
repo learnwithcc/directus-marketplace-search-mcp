@@ -76,8 +76,20 @@ Rate limit headers are included in all responses:
 
 For unlimited access, deploy your own instance:
 
-1. **One-click deploy** (coming soon)
-2. **Manual deployment**: Clone the [repository](https://github.com/learnwithcc/directus-marketplace-search-mcp)
+**One-Click Deploy:**
+
+[![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/learnwithcc/directus-marketplace-search-mcp)
+
+**Or use our deployment script:**
+
+```bash
+git clone https://github.com/learnwithcc/directus-marketplace-search-mcp.git
+cd directus-marketplace-search-mcp
+chmod +x deploy/deploy.sh
+./deploy/deploy.sh
+```
+
+See the [deployment guide](https://github.com/learnwithcc/directus-marketplace-search-mcp/blob/main/deploy/README.md) for details.
 
 ## Example Responses
 
